@@ -1,0 +1,40 @@
+.wrapper {
+  position: relative;
+}
+
+.wrapper::before,
+.wrapper::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #2c2c2c;
+}
+
+.wrapper::before {
+  top: 50%;
+  transform: translateY(calc(-1 * var(--item-height) / 2));
+}
+
+.wrapper::after {
+  top: 50%;
+  transform: translateY(calc(var(--item-height) / 2));
+}
+
+.container {
+  overflow: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+
+.date-picker-list {
+  display: flex;
+  flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+}
+
+.date-picker-list__item {
+  text-align: center;
+  scroll-snap-align: center;
+}
