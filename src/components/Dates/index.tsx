@@ -1,35 +1,42 @@
 import { useRef, useEffect, useState } from "react";
 import dayjs from "dayjs";
 
+// TODO: add am/pm
+// TODO: refactor, remove duplicate code
+// TODO: add query params
+
 const MAX_VISIBLE_ITEMS = 7;
 const ITEM_HEIGHT = 53;
 const CENTRAL_ITEM_COUNT = Math.floor(MAX_VISIBLE_ITEMS / 2);
 
-const prevDates = Array.from({ length: 10 }, (_, i) =>
-  dayjs().subtract(i, "day").format("ddd MMM D")
-).reverse();
+const getPrevDatesFrom = (base: dayjs.Dayjs, count = 10) =>
+  Array.from({ length: count }, (_, i) =>
+    base.subtract(i + 1, "day")
+  ).reverse();
 
-const nextDates = Array.from({ length: 10 }, (_, i) =>
-  dayjs()
-    .add(i + 1, "day")
-    .format("ddd MMM D")
-);
+const getNextDatesFrom = (base: dayjs.Dayjs, count = 10) =>
+  Array.from({ length: count }, (_, i) => base.add(i + 1, "day"));
 
 type PropsType = {
   onSetDateRef: (value: string) => void;
 };
 
 export const Dates = ({ onSetDateRef }: PropsType) => {
-  const [dates] = useState([...prevDates, ...nextDates]);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const today = dayjs();
 
-  const today = dayjs().format("ddd MMM D");
+  const [dates, setDates] = useState([
+    ...getPrevDatesFrom(today),
+    today,
+    ...getNextDatesFrom(today),
+  ]);
+
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const setSelectedItemRef = (container: HTMLDivElement) => {
     const topItem = Math.floor(container.scrollTop / ITEM_HEIGHT);
     const centralItemIdx = topItem + CENTRAL_ITEM_COUNT;
 
-    onSetDateRef(dates[centralItemIdx]);
+    onSetDateRef(dates[centralItemIdx].format("ddd MMM D"));
   };
 
   const handleScroll = () => {
@@ -40,23 +47,25 @@ export const Dates = ({ onSetDateRef }: PropsType) => {
     setSelectedItemRef(container);
 
     if (container.scrollTop <= ITEM_HEIGHT) {
-      console.log("need to add more prev dates");
+      setDates((prev) => [...getPrevDatesFrom(prev[0]), ...prev]);
     } else if (
       container.scrollTop >=
       (dates.length - MAX_VISIBLE_ITEMS - 1) * ITEM_HEIGHT
     ) {
-      console.log("need to add more next dates");
+      setDates((next) => [...next, ...getNextDatesFrom(next[next.length - 1])]);
     }
   };
 
   useEffect(() => {
     if (containerRef.current) {
-      const todayIndex = dates.findIndex((date) => date === today);
+      const todayIndex = dates.findIndex((date) =>
+        today.isSame(dayjs(date), "day")
+      );
 
       containerRef.current.scrollTop =
         (todayIndex - CENTRAL_ITEM_COUNT) * ITEM_HEIGHT;
 
-      onSetDateRef(today);
+      onSetDateRef(today.format("ddd MMM D"));
     }
   }, []);
 
@@ -90,15 +99,21 @@ export const Dates = ({ onSetDateRef }: PropsType) => {
       style={{ height: ITEM_HEIGHT * MAX_VISIBLE_ITEMS }}
     >
       <div className="date-picker-list">
-        {dates.map((date) => (
-          <button
-            key={date}
-            className="date-picker-list__item"
-            style={{ height: ITEM_HEIGHT }}
-          >
-            {date}
-          </button>
-        ))}
+        {dates.map((date) => {
+          const dateName = today.isSame(dayjs(date), "day")
+            ? "Today"
+            : date.format("ddd MMM D");
+
+          return (
+            <button
+              key={date.toString()}
+              className="date-picker-list__item"
+              style={{ height: ITEM_HEIGHT }}
+            >
+              {dateName}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
