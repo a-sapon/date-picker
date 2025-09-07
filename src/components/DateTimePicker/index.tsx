@@ -1,4 +1,5 @@
 import { useCallback, useRef } from "react";
+import dayjs from "dayjs";
 
 import { Dates } from "components/Dates";
 import { Hours } from "components/Hours";
@@ -6,6 +7,7 @@ import { Minutes } from "components/Minutes";
 import { Meridiem } from "components/Meridiem";
 
 import { CENTRAL_ITEM_COUNT, ITEM_HEIGHT } from "appConstants";
+import { queryParams, updateQueryParams } from "utils/queryParams";
 
 import "./styles.css";
 
@@ -21,6 +23,7 @@ export const DateTimePicker = () => {
 
     return items[centralItemIdx];
   };
+
   const setSelectedDateRef = useCallback(
     (container: HTMLDivElement, items: string[]) => {
       selectedDateRef.current = setSelectedItemRef(container, items);
@@ -46,9 +49,21 @@ export const DateTimePicker = () => {
     selectedMeridiemRef.current = value;
   };
 
+  const setQueryParams = () => {
+    queryParams.set("date", selectedDateRef.current);
+    queryParams.set("hour", selectedHoursRef.current);
+    queryParams.set("minute", selectedMinutesRef.current);
+    queryParams.set("meridiem", selectedMeridiemRef.current);
+    updateQueryParams();
+  };
+
   const handleClick = () => {
+    setQueryParams();
+
     console.log(
-      `Selected date: ${selectedDateRef.current} at ${selectedHoursRef.current}:${selectedMinutesRef.current}`
+      `Selected date: ${dayjs(selectedDateRef.current).format(
+        "ddd MMM D"
+      )} at ${selectedHoursRef.current}:${selectedMinutesRef.current}`
     );
   };
 

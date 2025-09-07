@@ -1,10 +1,12 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import dayjs from "dayjs";
 
 import {
   CENTRAL_ITEM_COUNT,
   ITEM_HEIGHT,
   MAX_VISIBLE_ITEMS,
 } from "appConstants";
+import { queryParams } from "utils/queryParams";
 
 const MERIDIEM = ["AM", "PM"];
 const FAKE_ITEMS = [
@@ -12,6 +14,8 @@ const FAKE_ITEMS = [
   ...MERIDIEM,
   ...Array(CENTRAL_ITEM_COUNT),
 ];
+const initialMeridiem = queryParams.get("meridiem") || dayjs().format("A");
+const initialMeridiemIndex = MERIDIEM.findIndex((m) => initialMeridiem === m);
 
 type PropsType = {
   onSetSelectedMeridiemRef: (value: string) => void;
@@ -27,6 +31,12 @@ export const Meridiem = ({ onSetSelectedMeridiemRef }: PropsType) => {
 
     onSetSelectedMeridiemRef(MERIDIEM[topItem]);
   };
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = initialMeridiemIndex ? ITEM_HEIGHT : 0;
+    }
+  }, [onSetSelectedMeridiemRef]);
 
   return (
     <div

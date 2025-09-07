@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import dayjs from "dayjs";
+import debounce from "lodash/debounce";
 
 import {
   CENTRAL_ITEM_COUNT,
@@ -7,8 +8,7 @@ import {
   MAX_VISIBLE_ITEMS,
 } from "appConstants";
 import { useWheelEvent } from "hooks/useWheelEvent";
-
-// TODO: add query params
+import { queryParams } from "utils/queryParams";
 
 const getPrevDatesFrom = (base: dayjs.Dayjs, count = 10) =>
   Array.from({ length: count }, (_, i) =>
@@ -18,14 +18,15 @@ const getPrevDatesFrom = (base: dayjs.Dayjs, count = 10) =>
 const getNextDatesFrom = (base: dayjs.Dayjs, count = 10) =>
   Array.from({ length: count }, (_, i) => base.add(i + 1, "day"));
 
-const currentDate = dayjs();
+const initialDate = dayjs(queryParams.get("date") ?? undefined);
+
 const initialDatesState = [
-  ...getPrevDatesFrom(currentDate),
-  currentDate,
-  ...getNextDatesFrom(currentDate),
+  ...getPrevDatesFrom(initialDate),
+  initialDate,
+  ...getNextDatesFrom(initialDate),
 ];
-const currentDateIndex = initialDatesState.findIndex((date) =>
-  currentDate.isSame(dayjs(date), "day")
+const initialDateIndex = initialDatesState.findIndex((date) =>
+  initialDate.isSame(date, "day")
 );
 
 type PropsType = {
@@ -48,24 +49,24 @@ export const Dates = ({ onSetSelectedDateRef }: PropsType) => {
     }
   };
 
-  const handleScroll = () => {
+  const handleScroll = debounce(() => {
     if (!containerRef.current) return;
 
     addDatesOnEdgeReach(containerRef.current);
     onSetSelectedDateRef(
       containerRef.current,
-      dates.map((date) => date.format("ddd MMM D"))
+      dates.map((date) => date.format("YYYY-MM-DD"))
     );
-  };
+  }, 300);
 
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTop =
-        (currentDateIndex - CENTRAL_ITEM_COUNT) * ITEM_HEIGHT;
+        (initialDateIndex - CENTRAL_ITEM_COUNT) * ITEM_HEIGHT;
 
       onSetSelectedDateRef(
         containerRef.current,
-        initialDatesState.map((date) => date.format("ddd MMM D"))
+        initialDatesState.map((date) => date.format("YYYY-MM-DD"))
       );
     }
   }, [onSetSelectedDateRef]);
@@ -81,7 +82,7 @@ export const Dates = ({ onSetSelectedDateRef }: PropsType) => {
     >
       <div className="date-picker-list">
         {dates.map((date) => {
-          const dateName = currentDate.isSame(dayjs(date), "day")
+          const dateName = dayjs().isSame(date, "day")
             ? "Today"
             : date.format("ddd MMM D");
 
