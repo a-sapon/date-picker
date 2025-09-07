@@ -13,4 +13,5 @@ export default defineConfig({
       hooks: path.resolve(__dirname, "src/hooks"),
     },
   },
+  base: "/date-picker/",
 });
