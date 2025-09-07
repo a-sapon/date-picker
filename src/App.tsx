@@ -1,11 +1,7 @@
-import { DateTimePicker } from "./components/DateTimePicker";
+import { DateTimePicker } from "components/DateTimePicker";
 
 function App() {
-  return (
-    <>
-      <DateTimePicker />
-    </>
-  );
+  return <DateTimePicker />;
 }
 
 export default App;

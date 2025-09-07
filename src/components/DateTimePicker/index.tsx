@@ -1,26 +1,49 @@
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 
-import { Dates } from "../Dates";
-import { Hours } from "../Hours";
-import { Minutes } from "../Minutes";
+import { Dates } from "components/Dates";
+import { Hours } from "components/Hours";
+import { Minutes } from "components/Minutes";
+import { Meridiem } from "components/Meridiem";
+
+import { CENTRAL_ITEM_COUNT, ITEM_HEIGHT } from "appConstants";
 
 import "./styles.css";
-
-const ITEM_HEIGHT = 53;
 
 export const DateTimePicker = () => {
   const selectedDateRef = useRef("");
   const selectedHoursRef = useRef("");
   const selectedMinutesRef = useRef("");
+  const selectedMeridiemRef = useRef("AM");
 
-  const handleSetDateRef = (value: string) => {
-    selectedDateRef.current = value;
+  const setSelectedItemRef = (container: HTMLDivElement, items: string[]) => {
+    const topItem = Math.floor(container.scrollTop / ITEM_HEIGHT);
+    const centralItemIdx = topItem + CENTRAL_ITEM_COUNT;
+
+    return items[centralItemIdx];
   };
-  const handleSetHoursRef = (value: string) => {
-    selectedHoursRef.current = value;
-  };
-  const handleSetMinutesRef = (value: string) => {
-    selectedMinutesRef.current = value;
+  const setSelectedDateRef = useCallback(
+    (container: HTMLDivElement, items: string[]) => {
+      selectedDateRef.current = setSelectedItemRef(container, items);
+    },
+    []
+  );
+
+  const setSelectedHoursRef = useCallback(
+    (container: HTMLDivElement, items: string[]) => {
+      selectedHoursRef.current = setSelectedItemRef(container, items);
+    },
+    []
+  );
+
+  const setSelectedMinutesRef = useCallback(
+    (container: HTMLDivElement, items: string[]) => {
+      selectedMinutesRef.current = setSelectedItemRef(container, items);
+    },
+    []
+  );
+
+  const setSelectedMeridiemRef = (value: string) => {
+    selectedMeridiemRef.current = value;
   };
 
   const handleClick = () => {
@@ -35,11 +58,14 @@ export const DateTimePicker = () => {
         className="wrapper"
         style={{ "--item-height": `${ITEM_HEIGHT}px` } as React.CSSProperties}
       >
-        <Dates onSetDateRef={handleSetDateRef} />
-        <Hours onSetHoursRef={handleSetHoursRef} />
-        <Minutes onSetMinutesRef={handleSetMinutesRef} />
+        <Dates onSetSelectedDateRef={setSelectedDateRef} />
+        <Hours onSetSelectedHoursRef={setSelectedHoursRef} />
+        <Minutes onSetSelectedMinutesRef={setSelectedMinutesRef} />
+        <Meridiem onSetSelectedMeridiemRef={setSelectedMeridiemRef} />
       </div>
-      <button onClick={handleClick}>Submit</button>
+      <button className="submit-btn" onClick={handleClick}>
+        Submit
+      </button>
     </div>
   );
 };

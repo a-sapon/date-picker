@@ -1,71 +1,34 @@
 import { useRef, useEffect } from "react";
 
-const MAX_VISIBLE_ITEMS = 7;
-const ITEM_HEIGHT = 53;
-const CENTRAL_ITEM_COUNT = Math.floor(MAX_VISIBLE_ITEMS / 2);
+import { ITEM_HEIGHT, MAX_VISIBLE_ITEMS } from "appConstants";
+import { scrollToCenter } from "utils/scrollToCenter";
+import { useWheelEvent } from "hooks/useWheelEvent";
+
 const HOURS = Array.from({ length: 12 }, (_, i) => `${i + 1}`);
-const MOCK_HOURS = [...HOURS, ...HOURS, ...HOURS].map((el, idx) => ({
-  id: idx,
-  value: el,
-}));
-const BLOCK_HEIGHT = HOURS.length * ITEM_HEIGHT;
+const MOCK_HOURS = [...HOURS, ...HOURS, ...HOURS];
 
 type PropsType = {
-  onSetHoursRef: (value: string) => void;
+  onSetSelectedHoursRef: (container: HTMLDivElement, items: string[]) => void;
 };
 
-export const Hours = ({ onSetHoursRef }: PropsType) => {
+export const Hours = ({ onSetSelectedHoursRef }: PropsType) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const setSelectedItemRef = (container: HTMLDivElement) => {
-    const topItem = Math.floor(container.scrollTop / ITEM_HEIGHT);
-    const centralItemIdx = topItem + CENTRAL_ITEM_COUNT;
-
-    onSetHoursRef(MOCK_HOURS[centralItemIdx].value);
-  };
-
   const handleScroll = () => {
-    const container = containerRef.current;
+    if (!containerRef.current) return;
 
-    if (!container) return;
-
-    setSelectedItemRef(container);
-
-    if (container.scrollTop <= ITEM_HEIGHT) {
-      container.scrollTop += BLOCK_HEIGHT;
-    } else if (container.scrollTop >= BLOCK_HEIGHT * 2) {
-      container.scrollTop -= BLOCK_HEIGHT;
-    }
+    scrollToCenter(containerRef.current, HOURS.length);
+    onSetSelectedHoursRef(containerRef.current, MOCK_HOURS);
   };
 
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTop = HOURS.length * ITEM_HEIGHT;
-      setSelectedItemRef(containerRef.current);
+      onSetSelectedHoursRef(containerRef.current, MOCK_HOURS);
     }
-  }, []);
+  }, [onSetSelectedHoursRef]);
 
-  useEffect(() => {
-    const container = containerRef.current;
-
-    if (!container) return;
-
-    const handler = (e: WheelEvent) => {
-      e.preventDefault();
-
-      const direction = e.deltaY > 0 ? 1 : -1;
-      const newScrollTop = container.scrollTop + direction * ITEM_HEIGHT;
-
-      container.scrollTo({
-        top: newScrollTop,
-        behavior: "smooth",
-      });
-    };
-
-    container.addEventListener("wheel", handler);
-
-    return () => container.removeEventListener("wheel", handler);
-  }, []);
+  useWheelEvent(containerRef);
 
   return (
     <div
@@ -75,13 +38,13 @@ export const Hours = ({ onSetHoursRef }: PropsType) => {
       style={{ height: ITEM_HEIGHT * MAX_VISIBLE_ITEMS }}
     >
       <div className="date-picker-list">
-        {MOCK_HOURS.map(({ id, value }) => (
+        {MOCK_HOURS.map((hour, idx) => (
           <button
-            key={id}
+            key={idx}
             className="date-picker-list__item"
             style={{ height: ITEM_HEIGHT }}
           >
-            {value}
+            {hour}
           </button>
         ))}
       </div>

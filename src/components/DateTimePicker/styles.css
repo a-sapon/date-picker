@@ -1,6 +1,7 @@
 .wrapper {
   position: relative;
   display: flex;
+  margin-bottom: 20px;
 }
 
 .wrapper::before,
@@ -38,4 +39,9 @@
 .date-picker-list__item {
   text-align: center;
   scroll-snap-align: center;
+}
+
+.submit-btn {
+  border: 1px solid #2c2c2c;
+  border-radius: 4px;
 }

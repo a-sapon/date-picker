@@ -1,13 +1,14 @@
 import { useRef, useEffect, useState } from "react";
 import dayjs from "dayjs";
 
-// TODO: add am/pm
-// TODO: refactor, remove duplicate code
-// TODO: add query params
+import {
+  CENTRAL_ITEM_COUNT,
+  ITEM_HEIGHT,
+  MAX_VISIBLE_ITEMS,
+} from "appConstants";
+import { useWheelEvent } from "hooks/useWheelEvent";
 
-const MAX_VISIBLE_ITEMS = 7;
-const ITEM_HEIGHT = 53;
-const CENTRAL_ITEM_COUNT = Math.floor(MAX_VISIBLE_ITEMS / 2);
+// TODO: add query params
 
 const getPrevDatesFrom = (base: dayjs.Dayjs, count = 10) =>
   Array.from({ length: count }, (_, i) =>
@@ -17,35 +18,26 @@ const getPrevDatesFrom = (base: dayjs.Dayjs, count = 10) =>
 const getNextDatesFrom = (base: dayjs.Dayjs, count = 10) =>
   Array.from({ length: count }, (_, i) => base.add(i + 1, "day"));
 
+const currentDate = dayjs();
+const initialDatesState = [
+  ...getPrevDatesFrom(currentDate),
+  currentDate,
+  ...getNextDatesFrom(currentDate),
+];
+const currentDateIndex = initialDatesState.findIndex((date) =>
+  currentDate.isSame(dayjs(date), "day")
+);
+
 type PropsType = {
-  onSetDateRef: (value: string) => void;
+  onSetSelectedDateRef: (container: HTMLDivElement, items: string[]) => void;
 };
 
-export const Dates = ({ onSetDateRef }: PropsType) => {
-  const today = dayjs();
-
-  const [dates, setDates] = useState([
-    ...getPrevDatesFrom(today),
-    today,
-    ...getNextDatesFrom(today),
-  ]);
+export const Dates = ({ onSetSelectedDateRef }: PropsType) => {
+  const [dates, setDates] = useState(initialDatesState);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const setSelectedItemRef = (container: HTMLDivElement) => {
-    const topItem = Math.floor(container.scrollTop / ITEM_HEIGHT);
-    const centralItemIdx = topItem + CENTRAL_ITEM_COUNT;
-
-    onSetDateRef(dates[centralItemIdx].format("ddd MMM D"));
-  };
-
-  const handleScroll = () => {
-    const container = containerRef.current;
-
-    if (!container) return;
-
-    setSelectedItemRef(container);
-
+  const addDatesOnEdgeReach = (container: HTMLDivElement) => {
     if (container.scrollTop <= ITEM_HEIGHT) {
       setDates((prev) => [...getPrevDatesFrom(prev[0]), ...prev]);
     } else if (
@@ -56,40 +48,29 @@ export const Dates = ({ onSetDateRef }: PropsType) => {
     }
   };
 
+  const handleScroll = () => {
+    if (!containerRef.current) return;
+
+    addDatesOnEdgeReach(containerRef.current);
+    onSetSelectedDateRef(
+      containerRef.current,
+      dates.map((date) => date.format("ddd MMM D"))
+    );
+  };
+
   useEffect(() => {
     if (containerRef.current) {
-      const todayIndex = dates.findIndex((date) =>
-        today.isSame(dayjs(date), "day")
-      );
-
       containerRef.current.scrollTop =
-        (todayIndex - CENTRAL_ITEM_COUNT) * ITEM_HEIGHT;
+        (currentDateIndex - CENTRAL_ITEM_COUNT) * ITEM_HEIGHT;
 
-      onSetDateRef(today.format("ddd MMM D"));
+      onSetSelectedDateRef(
+        containerRef.current,
+        initialDatesState.map((date) => date.format("ddd MMM D"))
+      );
     }
-  }, []);
+  }, [onSetSelectedDateRef]);
 
-  useEffect(() => {
-    const container = containerRef.current;
-
-    if (!container) return;
-
-    const handler = (e: WheelEvent) => {
-      e.preventDefault();
-
-      const direction = e.deltaY > 0 ? 1 : -1;
-      const newScrollTop = container.scrollTop + direction * ITEM_HEIGHT;
-
-      container.scrollTo({
-        top: newScrollTop,
-        behavior: "smooth",
-      });
-    };
-
-    container.addEventListener("wheel", handler);
-
-    return () => container.removeEventListener("wheel", handler);
-  }, []);
+  useWheelEvent(containerRef);
 
   return (
     <div
@@ -100,7 +81,7 @@ export const Dates = ({ onSetDateRef }: PropsType) => {
     >
       <div className="date-picker-list">
         {dates.map((date) => {
-          const dateName = today.isSame(dayjs(date), "day")
+          const dateName = currentDate.isSame(dayjs(date), "day")
             ? "Today"
             : date.format("ddd MMM D");
 
