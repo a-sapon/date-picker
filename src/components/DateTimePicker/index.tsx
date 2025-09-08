@@ -73,7 +73,10 @@ export const DateTimePicker = () => {
         className="wrapper"
         style={{ "--item-height": `${ITEM_HEIGHT}px` } as React.CSSProperties}
       >
-        <Dates onSetSelectedDateRef={setSelectedDateRef} />
+        <Dates
+          selectedDateRef={selectedDateRef}
+          onSetSelectedDateRef={setSelectedDateRef}
+        />
         <Hours onSetSelectedHoursRef={setSelectedHoursRef} />
         <Minutes onSetSelectedMinutesRef={setSelectedMinutesRef} />
         <Meridiem onSetSelectedMeridiemRef={setSelectedMeridiemRef} />

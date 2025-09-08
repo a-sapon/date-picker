@@ -1,4 +1,10 @@
-import { useRef, useEffect, useState } from "react";
+import {
+  useRef,
+  useEffect,
+  useState,
+  useLayoutEffect,
+  type RefObject,
+} from "react";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
 
@@ -10,12 +16,12 @@ import {
 import { useWheelEvent } from "hooks/useWheelEvent";
 import { queryParams } from "utils/queryParams";
 
-const getPrevDatesFrom = (base: dayjs.Dayjs, count = 10) =>
+const getPrevDatesFrom = (base: dayjs.Dayjs, count = 20) =>
   Array.from({ length: count }, (_, i) =>
     base.subtract(i + 1, "day")
   ).reverse();
 
-const getNextDatesFrom = (base: dayjs.Dayjs, count = 10) =>
+const getNextDatesFrom = (base: dayjs.Dayjs, count = 20) =>
   Array.from({ length: count }, (_, i) => base.add(i + 1, "day"));
 
 const initialDate = dayjs(queryParams.get("date") ?? undefined);
@@ -30,23 +36,56 @@ const initialDateIndex = initialDatesState.findIndex((date) =>
 );
 
 type PropsType = {
+  selectedDateRef: RefObject<string>;
   onSetSelectedDateRef: (container: HTMLDivElement, items: string[]) => void;
 };
 
-export const Dates = ({ onSetSelectedDateRef }: PropsType) => {
+export const Dates = ({ selectedDateRef, onSetSelectedDateRef }: PropsType) => {
   const [dates, setDates] = useState(initialDatesState);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const isPrependingRef = useRef(false);
+  const scrollTopAdjustmentRef = useRef(0);
 
   const addDatesOnEdgeReach = (container: HTMLDivElement) => {
+    if (isPrependingRef.current) return;
+
+    isPrependingRef.current = true;
+
     if (container.scrollTop <= ITEM_HEIGHT) {
-      setDates((prev) => [...getPrevDatesFrom(prev[0]), ...prev]);
+      setDates((prev) => {
+        const newDates = [...getPrevDatesFrom(prev[0]), ...prev];
+
+        const centralDateIndex = newDates.findIndex((date) =>
+          dayjs(selectedDateRef.current).isSame(date, "day")
+        );
+
+        scrollTopAdjustmentRef.current =
+          (centralDateIndex - CENTRAL_ITEM_COUNT) * ITEM_HEIGHT;
+
+        return newDates;
+      });
     } else if (
       container.scrollTop >=
       (dates.length - MAX_VISIBLE_ITEMS - 1) * ITEM_HEIGHT
     ) {
-      setDates((next) => [...next, ...getNextDatesFrom(next[next.length - 1])]);
+      setDates((next) => {
+        const newDates = [...next, ...getNextDatesFrom(next[next.length - 1])];
+
+        const centralDateIndex = newDates.findIndex((date) =>
+          dayjs(selectedDateRef.current).isSame(date, "day")
+        );
+
+        scrollTopAdjustmentRef.current =
+          (centralDateIndex - CENTRAL_ITEM_COUNT) * ITEM_HEIGHT;
+
+        return newDates;
+      });
     }
+
+    setTimeout(() => {
+      isPrependingRef.current = false;
+    }, 300);
   };
 
   const handleScroll = debounce(() => {
@@ -57,7 +96,7 @@ export const Dates = ({ onSetSelectedDateRef }: PropsType) => {
       containerRef.current,
       dates.map((date) => date.format("YYYY-MM-DD"))
     );
-  }, 300);
+  }, 100);
 
   useEffect(() => {
     if (containerRef.current) {
@@ -70,6 +109,13 @@ export const Dates = ({ onSetSelectedDateRef }: PropsType) => {
       );
     }
   }, [onSetSelectedDateRef]);
+
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+
+    containerRef.current.scrollTop = scrollTopAdjustmentRef.current;
+    scrollTopAdjustmentRef.current = 0;
+  }, [dates.length]);
 
   useWheelEvent(containerRef);
 
